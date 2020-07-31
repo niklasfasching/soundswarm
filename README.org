@@ -1,0 +1,19 @@
+* speaker swarm
+the idea is to have all websocket clients act as a sound system (lol) by playing audio in sync
+
+** MVP
+- [ ] play button starts mp3 on all clients simultaneously
+
+* notes
+Two ways to synchronise client audio
+1. clients each open their own stream and synchronize by communicating
+2. all clients join the same stream (server streams out audio) - clients just join in
+
+No idea which is more fruitful for actually playing audio in sync - option 1. is more desirable
+because the server doesn't need to do anything but relay messages between clients - that means ppl can use their own
+accounts (e.g. spotify) and the server doesn't have to expose our accounts to the world. So let's start with option 1.
+
+* ideas
+- soundboard \\
+  wait for all clients to fetch mp3 before play
+- spotify
