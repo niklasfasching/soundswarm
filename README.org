@@ -12,7 +12,26 @@ Two ways to synchronise client audio
 No idea which is more fruitful for actually playing audio in sync - option 1. is more desirable
 because the server doesn't need to do anything but relay messages between clients - that means ppl can use their own
 accounts (e.g. spotify) and the server doesn't have to expose our accounts to the world. So let's start with option 1.
+* technical
+- spotify control goes through http api and progress_ms doesn't seem to be completely accurate
+  (i.e. progress_ms difference doesn't correlate much to how "in sync" devices sound) \\
+  hard to sync
+- idea: usermedia / displaymedia to capture device audio and stream it via webrtc \\
+  there's obviously a delay introduced by capturing + network...
+  https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia#Browser_compatibility
+  #+begin_src js
+  // selecting correct microphone gets system audio - but that obviously gives us a delay. not completely synced
+  // across devices that's probably enough to be annoying
+  navigator.mediaDevices.getUserMedia({audio: true}).then(stream => {
+    const context = new AudioContext();
+    const source = context.createMediaStreamSource(stream);
+    source.connect(context.destination)
+  })
+  #+end_src
+- youtube iframe embed can be controlled via js https://developers.google.com/youtube/iframe_api_reference?hl=de \\
+  could be more responsive (i.e. not controlled through http requests) but 1. screen on 2. data usage kill this
 
+- some related paper https://pub.tik.ee.ethz.ch/students/2015-FS/SA-2015-02.pdf
 * ideas
 - soundboard \\
   wait for all clients to fetch mp3 before play
