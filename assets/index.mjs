@@ -1,35 +1,49 @@
+import {openWebSocket} from '/util.mjs';
+import {spotify, getOAuthToken} from '/spotify.mjs';
+
 const playButton = document.querySelector('#play');
-
-async function openWebSocket(hostpath, onmessage) {
-  return new Promise((resolve, reject) => {
-    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const socket = new WebSocket(`${protocol}//${hostpath}`);
-    socket.onopen = () => resolve(Object.assign(socket, {onmessage}));
-    socket.onerror = (err) => reject(err);
-  });
-}
-
-async function play(url) {
-  const context = new AudioContext();
-  const buffer = await fetch(url)
-        .then(res => res.arrayBuffer())
-        .then(arrayBuffer => context.decodeAudioData(arrayBuffer));
-  console.log(buffer)
-  const source = context.createBufferSource();
-  source.buffer = buffer;
-  source.connect(context.destination);
-  source.start();
-}
+const pauseButton = document.querySelector('#pause');
+const currentButton = document.querySelector('#current');
 
 async function main() {
   const socket = await openWebSocket(`${location.host}/websocket`, (event) => {
     console.log(event.data)
-    play('https://s3-us-west-2.amazonaws.com/s.cdpn.io/123941/Yodel_Sound_Effect.mp3');
   });
 
+  const node = await deviceSelect((deviceId) => {
+    socket.send(JSON.stringify({
+      action: 'register',
+      token: getOAuthToken(),
+      deviceId,
+    }));
+  });
+  document.body.appendChild(node);
+
   playButton.onclick = () => {
-    socket.send(JSON.stringify({action: 'play'}));
+    socket.send(JSON.stringify({action: 'play', id: 'spotify:track:3VjpBGWAWkrrxz6yqSkUms'}));
   };
+
+  pauseButton.onclick = async () => {
+    socket.send(JSON.stringify({action: 'pause'}));
+  };
+  currentButton.onclick = async () => {
+    socket.send(JSON.stringify({action: 'current'}));
+  };
+}
+
+async function deviceSelect(cb) {
+  const {devices} = await spotify('v1/me/player/devices');
+  console.log(devices)
+  if (!devices || devices.length === 0) {
+    return Object.assign(document.createElement('p'), {innerText: 'no active devices. open spotify and try again'});
+  }
+  devices.sort(({type: a}, {type: b}) => b > a); // smartphone before computer
+  const select = document.createElement('select');
+  select.size = devices.length;
+  select.innerHTML = devices.map(({id, name, type}) => `<option value=${id}>${name} (${type})</option>`).join('');
+  select.onchange = (e) => cb(e.explicitOriginalTarget.value);
+  cb(devices[0].id);
+  return select;
 }
 
 main();
